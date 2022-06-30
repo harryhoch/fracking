@@ -1,0 +1,177 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+https://bookdown.org/rdpeng/RProgDA/mapping.html
+```{r}
+library(ggplot2)
+library(tidyverse)
+us_map <- map_data("state")
+head(us_map, 3)
+```
+
+```{r}
+us_map %>% 
+  filter(region %in% c("pennsylvania")) %>%
+  ggplot(aes(x = long, y = lat,group=group)) +
+  geom_path()
+```
+```{r}
+us_map %>% 
+  filter(region%in% c("pennsylvania"))
+```
+```{r}
+us_counties <-map_data("county")
+head(us_counties)
+```
+```{r}
+us_counties %>% 
+  filter(region %in% c("pennsylvania")) %>%
+  ggplot(aes(x = long, y = lat,group=group)) +
+  geom_polygon(fill=NA,color="black")+
+  theme_void()
+```
+```{r}
+pa <-map_data('county',region='pennsylvania')
+us_counties<-map_data('county')
+```
+
+```{r}
+ggplot(pa,aes(x = long, y = lat,group=group)) +
+  geom_polygon(fill=NA,color="black")+
+  theme_void()
+```
+```{r}
+library(tidyverse)
+frackdir='/Users/harry/OneDrive - University of Pittsburgh/Fracking Study Data'
+setwd(frackdir)
+subdir = "DEP BCW Wastewater Facilities"
+depdir = paste(frackdir,"/",subdir,sep="")
+print(depdir)
+setwd(depdir)
+geo = read.csv("./Geocodes/ourWastewaterFULL.csv")
+```
+
+```{r}
+head(geo)
+```
+```{r}
+ggplot(pa,aes(x = long, y = lat,group=group)) +
+  geom_polygon(fill="lightblue",color="black")+
+  geom_point(data=geo,aes(group=NULL,color="black"))+
+  theme_void()
+```
+
+what about the missing values? What's up?
+```{r}
+which(is.na(geo$lat))
+```
+
+```{r}
+which(is.na(geo$long))
+```
+```{r}
+geo2=na.omit(geo)
+```
+```{r}
+ggplot(pa,aes(x = long, y = lat,group=group)) +
+  geom_polygon(fill="lightblue",color="black")+
+  geom_point(data=geo2,aes(long,lat),inherit.aes=FALSE)+
+  theme_void()
+```
+```{r}
+library("maps")
+library(sf)
+#states = st_as_sf(map("state",plot=FALSE,fill=TRUE))
+pa <-map_data('county',region='pennsylvania')
+pac <- map('county',region='pennsylvania',plot=FALSE,fill=TRUE)
+#pa_counties<-st_as_sf(map('county',region='pennsylvania',plot=FALSE,fill=TRUE))
+pa_counties = st_as_sf(pa,coords=c("long","lat"))
+```
+https://r-spatial.org/r/2018/10/25/ggplot2-sf-2.html
+```{r}
+ggplot(data=states)+
+  geom_sf()+
+  theme_void()
+```
+```{r}
+ggplot(data=pa_counties)+
+  geom_sf()+
+  theme_void()
+```
+```{r}
+test_lat_long =data.frame(latitude=c(40.4406248),longitude=c(-79.995))
+```
+```{r}
+ggplot(data=pa_counties)+
+  geom_sf()+
+  geom_point(data=test_lat_long,aes(x=longitude,y=latitude))+
+  theme_void()
+```
+so there is a problem with geo!!!
+```{r}
+pa_lat_min=39
+pa_lat_max=43
+pa_long_min=-81
+pa_long_max=-73
+```
+```{r}
+print(pa_lat_min)
+geo %>% filter(lat < pa_lat_min)
+```
+```{r}
+geo %>% filter(lat  > pa_lat_max)
+```
+```{r}
+nrow(geo)
+```
+```{r}
+geo %>% filter(long  < pa_long_min)
+```
+```{r}
+geo %>% filter(long  > pa_long_max)
+```
+
+```{r}
+```
+
+
+```{r}
+new_geo <- geo %>% filter(lat >= pa_lat_min) %>% filter(lat <=pa_lat_max) %>% filter(long >=pa_long_min) %>% filter(long <=pa_long_max)
+```
+```{r}
+nrow(new_geo)
+```
+
+```{r}
+nrow(geo)
+```
+```{r}
+ggplot(data=pa_counties)+
+  geom_sf()+
+  geom_point(data=new_geo,aes(x=long,y=lat))+
+  theme_void()
+```
+consider looking at https://r-spatial.org/r/2018/10/25/ggplot2-sf-2.html to see how to show limited surrounding areas.
+```{r}
+pa_geo <- geo %>% filter(grepl(", PA",.$addr))
+```
+```{r}
+pa_geo
+```
+```{r}
+geo
+```
+

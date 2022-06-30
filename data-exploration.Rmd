@@ -1,0 +1,151 @@
+---
+title: "Exploring Fracking Data"
+output: html_notebook
+---
+# Fracking data, for Pitt CHEER project
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+set up directories
+```{r}
+library(tidyverse)
+frackdir="/Users/harry/OneDrive - University of Pittsburgh/Fracking Study Data"
+setwd(frackdir)
+```
+go to BCW directory and read file
+
+```{r}
+subdir = "DEP BCW Wastewater Facilities"
+depdir = paste(frackdir,"/",subdir,sep="")
+print(depdir)
+setwd(depdir)
+geo = read.csv("./Geocodes/ourWastewaterFULL.csv")
+```
+```{r}
+geo$long=as.numeric(geo$long)
+summarize(geo)
+library(dplyr)
+```
+```{r}
+str(geo)
+```
+```{r}
+library(dplyr)
+summarize(geo,max=max(geo$long))
+```
+```{r}
+summary(geo)
+```
+trying to do some graphing
+```{r}
+library(ggplot2)
+theme_set(theme_bw(base_size=16)) 
+```
+get county data
+```{r}
+us_counties <-map_data("county")
+```
+```{r}
+head(us_counties)
+```
+```{r}
+p <- ggplot(data = us_counties,
+            mapping = aes(x = long, y = lat,
+                          group = group, fill = subregion))
+```
+
+```{r}
+p + geom_polygon(color = "gray90", size = 0.1) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  guides(fill = "none")+
+  theme(axis.line=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid=element_blank())
+```
+https://datavizpyr.com/how-to-make-us-state-and-county-level-maps-in-r/
+```{r}
+```
+
+
+```{r}
+head(us_counties)
+```
+```{r}
+pa_counties=us_counties[us_counties['region']=='pennsylvania',]
+```
+```{r}
+head(pa_counties)
+```
+```{r}
+```
+
+
+```{r}
+p <- ggplot(data = pa_counties,
+            mapping = aes(x = long, y = lat,
+                          group = group, fill = subregion))
+p + geom_polygon(color = "gray90", size = 0.1) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  guides(fill = "none")+
+  theme(axis.line=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid=element_blank())
+```
+
+
+```{r}
+p <- ggplot(data = pa_counties,
+            mapping = aes(x = long, y = lat,group=group),fill="green")
+p <- p+ geom_polygon(color = "white", size = 0.1) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  guides(fill = "none")
+#p <-p+geom_point(data=geo,aes(x=long,y=lat),colour="Pink",size=3,inherit.aes=FALSE)
+p
+```
+```{r}
+p <- ggplot(data = pa_counties,
+            mapping = aes(x = long, y = lat,group=group),fill=NA,color="black")
+p <- p+ geom_polygon(color = "white", size = 0.1) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  guides(fill = "none")+
+  theme(axis.line=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid=element_blank())
+
+
+p <-p+geom_point(data=geo,aes(x=long,y=lat),colour="Pink",size=3,inherit.aes=FALSE)
+p
+```
+http://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html
+```{r}
+library(ggplot2)
+library(ggmap)
+pa_base <- ggplot(data = pa_counties, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = NA)
+pa_base <- pa_base +theme_nothing()
+pa_base <- pa_base+geom_point(data=geo,aes(x=long,y=lat),colour="Pink",size=3,inherit.aes=FALSE)
+pa_base
+```
+```{r}
+library(sf)
+pa_sf =st_as_sf(pa_counties,coords=c(1:2))
+```
+```{r}
+ggplot(pa_sf) +
+  geom_path()
+```
+
