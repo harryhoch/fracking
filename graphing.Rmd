@@ -19,43 +19,9 @@ https://bookdown.org/rdpeng/RProgDA/mapping.html
 library(ggplot2)
 library(tidyverse)
 library(maps)
-us_map <- map_data("state")
-head(us_map, 3)
 ```
 
 ```{r}
-us_map %>% 
-  filter(region %in% c("pennsylvania")) %>%
-  ggplot(aes(x = long, y = lat,group=group)) +
-  geom_path()
-```
-```{r}
-us_map %>% 
-  filter(region%in% c("pennsylvania"))
-```
-```{r}
-us_counties <-map_data("county")
-head(us_counties)
-```
-```{r}
-us_counties %>% 
-  filter(region %in% c("pennsylvania")) %>%
-  ggplot(aes(x = long, y = lat,group=group)) +
-  geom_polygon(fill=NA,color="black")+
-  theme_void()
-```
-```{r}
-pa <-map_data('county',region='pennsylvania')
-us_counties<-map_data('county')
-```
-
-```{r}
-ggplot(pa,aes(x = long, y = lat,group=group)) +
-  geom_polygon(fill=NA,color="black")+
-  theme_void()
-```
-```{r}
-library(tidyverse)
 frackdir='/Users/harry/OneDrive - University of Pittsburgh/Fracking Study Data'
 setwd(frackdir)
 subdir = "DEP BCW Wastewater Facilities"
@@ -68,43 +34,17 @@ geo = read.csv("./Geocodes/ourWastewaterFULL.csv")
 ```{r}
 head(geo)
 ```
-```{r}
-ggplot(pa,aes(x = long, y = lat,group=group)) +
-  geom_polygon(fill="lightblue",color="black")+
-  geom_point(data=geo,aes(group=NULL,color="black"))+
-  theme_void()
-```
+
 
 what about the missing values? What's up?
 ```{r}
-which(is.na(geo$lat))
-```
-
-```{r}
-which(is.na(geo$long))
-```
-```{r}
-geo2=na.omit(geo)
-```
-```{r}
-ggplot(pa,aes(x = long, y = lat,group=group)) +
-  geom_polygon(fill="lightblue",color="black")+
-  geom_point(data=geo2,aes(long,lat),inherit.aes=FALSE)+
-  theme_void()
-```
-```{r}
-library("maps")
-library(sf)
 states = st_as_sf(map("state",plot=FALSE,fill=TRUE))
 pa <-map_data('county',region='pennsylvania')
 pa_counties<-st_as_sf(map('county',region='pennsylvania',plot=FALSE,fill=TRUE))
 head(states)
 ```
 https://r-spatial.org/r/2018/10/25/ggplot2-sf-2.html
-```{r}
-ggplot(data=states)+
-  geom_sf()+theme_void()
-```
+
 ```{r}
 ggplot(data=pa_counties)+
   geom_sf()+
@@ -112,47 +52,14 @@ ggplot(data=pa_counties)+
   theme_void()
 ```
 ```{r}
-test_lat_long =data.frame(latitude=c(40.4406248),longitude=c(-79.995))
-ggplot(data=pa_counties)+
-  geom_sf()+
-  geom_point(data=test_lat_long,aes(x=longitude,y=latitude))+
-  theme_void()
-```
-so there is a problem with geo!!!
-
-
-```{r}
 pa_lat_min=39
 pa_lat_max=43
 pa_long_min=-81
 pa_long_max=-73
-```
-```{r}
-print(pa_lat_min)
-geo %>% filter(lat < pa_lat_min)
-```
-```{r}
-geo %>% filter(lat  > pa_lat_max)
-```
-```{r}
-nrow(geo)
-```
-```{r}
-geo %>% filter(long  < pa_long_min)
-```
-```{r}
-geo %>% filter(long  > pa_long_max)
-```
-```{r}
 new_geo <- geo%>% filter(lat >= pa_lat_min) %>% filter(lat <=pa_lat_max) %>% filter(long >=pa_long_min) %>% filter(long <=pa_long_max)
-```
-```{r}
 nrow(new_geo)
 ```
 
-```{r}
-nrow(geo)
-```
 ```{r}
 ggplot(data=pa_counties)+
   geom_sf()+
@@ -162,14 +69,6 @@ ggplot(data=pa_counties)+
 consider looking at https://r-spatial.org/r/2018/10/25/ggplot2-sf-2.html to see how to show limited surrounding areas.
 ```{r}
 pa_geo <- new_geo %>% filter(grepl(", PA",.$addr))
-```
-```{r}
-pa_geo
-```
-```{r}
-geo
-```
-```{r}
 ggplot(data=pa_counties)+
   geom_sf()+
   geom_point(data=pa_geo,aes(x=long,y=lat))+
@@ -242,23 +141,53 @@ edmr = "DEP eDMR Data"
 edmr_dir = paste(frackdir,"/",edmr,sep="")
 setwd(edmr_dir)
 barium <- read.csv("./pa_dep_edmr_barium_bromide_chloride_strontium.csv")
+bga<-read.csv("./pa_dep_edmr_total_beta_gross_alpha_2007-2020.csv")
+radium<-read.csv("./pa_dep_edmr_total_radium226_radium228_2007-2020.csv")
+uranium<-read.csv("./pa_dep_edmr_total_uranium_2007-2020.csv")
 ```
 ```{r}
-locs <- barium %>% select(Permit_Number,Latitude,Longitude)
-nrow(locs)
+blocs <- barium %>% select(Permit_Number,Latitude,Longitude)
+blocs <- blocs[!duplicated(locs), ]
+bgalocs <- bga %>% select(Permit_Number,Latitude,Longitude)
+bgalocs <-bgalocs[!duplicated(bgalocs),]
+radlocs <- radium %>% select(Permit_Number,Latitude,Longitude)
+radlocs <-radlocs[!duplicated(radlocs),]
+uralocs <- uranium %>% select(Permit_Number,Latitude,Longitude)
+uralocs <-uralocs[!duplicated(uralocs),]
 ```
 
-
+graph it , using colors from http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
 ```{r}
-locs <- locs[!duplicated(locs), ]
-nrow(locs)
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+ggplot(data=pa_counties)+
+  geom_sf()+
+  geom_point(data=pa_geo,aes(x=long,y=lat),color=cbPalette[1])+
+  geom_point(data=blocs,aes(x=Longitude,y=Latitude),color=cbPalette[2])+
+  geom_point(data=bgalocs,aes(x=Longitude,y=Latitude),color=cbPalette[3])+
+  geom_point(data=radlocs,aes(x=Longitude,y=Latitude),color=cbPalette[4])+
+  geom_point(data=uralocs,aes(x=Longitude,y=Latitude),color=cbPalette[5])+
+  theme_void()
 ```
-graph it 
+just bga
 ```{r}
 ggplot(data=pa_counties)+
   geom_sf()+
-  geom_point(data=pa_geo,aes(x=long,y=lat))+
-  geom_point(data=locs,aes(x=Longitude,y=Latitude),color="red")+
+  geom_point(data=bgalocs,aes(x=Longitude,y=Latitude),color=cbPalette[3])+
   theme_void()
 ```
+just radium
+```{r}
+ggplot(data=pa_counties)+
+  geom_sf()+
+  geom_point(data=radlocs,aes(x=Longitude,y=Latitude),color=cbPalette[4])+
+  theme_void()
+```
+just uranium
+```{r}
+ggplot(data=pa_counties)+
+  geom_sf()+
+  geom_point(data=uralocs,aes(x=Longitude,y=Latitude),color=cbPalette[5])+
+  theme_void()
+```
+
 
