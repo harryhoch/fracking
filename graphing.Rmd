@@ -19,6 +19,7 @@ https://bookdown.org/rdpeng/RProgDA/mapping.html
 library(ggplot2)
 library(tidyverse)
 library(maps)
+library(sf)
 ```
 
 ```{r}
@@ -105,10 +106,41 @@ geocode <- function(name, address, city, state, zipcode){
     lat <- response$feature[[1]]$geometry$coordinates[2]
     return(c(lon,lat))
 }
+
+
+
+geocode <- function(address, citystatezip){
+  # NOMINATIM SEARCH API URL
+  src_url <- "https://nominatim.openstreetmap.org/search?q="
+  
+  # CREATE A FULL ADDRESS
+  # put in + instead of space
+  address = str_replace_all(string = address, pattern = "\\s", 
+                         replacement = "+")
+  citystatezip = gsub(" ","%2C",citystatezip)
+  addr <- paste(address, citystatezip, sep = "%2C")
+  
+  # CREATE A SEARCH URL BASED ON NOMINATIM API TO RETURN GEOJSON
+  requests <- paste0(src_url, addr, "&format=geojson")
+  print(requests)
+  
+    
+    # QUERY THE API TRANSFORM RESPONSE FROM JSON TO R LIST
+    response <- read_html(requests) %>%
+      html_node("p") %>%
+      html_text() %>%
+      fromJSON()
+    
+    
+    # FROM THE RESPONSE EXTRACT LATITUDE AND LONGITUDE COORDINATES
+    lon <- response$features[[1]]$geometry$coordinates[1]
+    lat <- response$feature[[1]]$geometry$coordinates[2]
+    return(c(lon,lat))
+}
 ```
 try it out
 ```{r}
-a= geocode("foo","5607 Baum Blvd","Pittsburgh","PA","15206")
+a= geocode("5607 Baum Blvd","Pittsburgh, PA 15206")
 a
 ```
 ```{r}
@@ -147,7 +179,7 @@ uranium<-read.csv("./pa_dep_edmr_total_uranium_2007-2020.csv")
 ```
 ```{r}
 blocs <- barium %>% select(Permit_Number,Latitude,Longitude)
-blocs <- blocs[!duplicated(locs), ]
+blocs <- blocs[!duplicated(blocs), ]
 bgalocs <- bga %>% select(Permit_Number,Latitude,Longitude)
 bgalocs <-bgalocs[!duplicated(bgalocs),]
 radlocs <- radium %>% select(Permit_Number,Latitude,Longitude)
@@ -161,11 +193,11 @@ graph it , using colors from http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 ggplot(data=pa_counties)+
   geom_sf()+
-  geom_point(data=pa_geo,aes(x=long,y=lat),color=cbPalette[1])+
-  geom_point(data=blocs,aes(x=Longitude,y=Latitude),color=cbPalette[2])+
-  geom_point(data=bgalocs,aes(x=Longitude,y=Latitude),color=cbPalette[3])+
-  geom_point(data=radlocs,aes(x=Longitude,y=Latitude),color=cbPalette[4])+
-  geom_point(data=uralocs,aes(x=Longitude,y=Latitude),color=cbPalette[5])+
+  geom_point(data=pa_geo,aes(x=long,y=lat),color=cbPalette[1],size=0.5)+
+  geom_point(data=blocs,aes(x=Longitude,y=Latitude),color=cbPalette[2],size=0.5)+
+  geom_point(data=bgalocs,aes(x=Longitude,y=Latitude),color=cbPalette[3],size=0.5)+
+  geom_point(data=radlocs,aes(x=Longitude,y=Latitude),color=cbPalette[4],size=0.5)+
+  geom_point(data=uralocs,aes(x=Longitude,y=Latitude),color=cbPalette[5],size=0.5)+
   theme_void()
 ```
 just bga
@@ -188,6 +220,133 @@ ggplot(data=pa_counties)+
   geom_sf()+
   geom_point(data=uralocs,aes(x=Longitude,y=Latitude),color=cbPalette[5])+
   theme_void()
+```
+```{r}
+frackdir='/Users/harry/OneDrive - University of Pittsburgh/Fracking Study Data'
+setwd(frackdir)
+subdir = "DEP BCW Wastewater Facilities"
+depdir = paste(frackdir,"/",subdir,sep="")
+print(depdir)
+setwd(depdir)
+facilities<-read.csv("WMS_Permitted_Facilities_20210526.csv")
+violations<-read.csv("WMS_Violations_ext.csv")
+```
+```{r}
+facilities <- rename(facilities,CLNT_ID=CLIENT_ID)
+```
+```{r}
+violation_facilities = merge(facilities,violations,by='CLNT_ID')
+colnames(violation_facilities)
+```
+```{r}
+nrow(violation_facilities)
+```
+get clint_id, location_address, and location address_city_state_zip
+```{r}
+violation_locs<- violation_facilities %>% select(CLNT_ID,LOCATION_ADDRESS,LOCATION_ADDRESS_CITY_STATE_ZIP)
+violation_locs <-violation_locs[!duplicated(violation_locs),]
+nrow(violation_locs)
+``` 
+```{r}
+violation_locs$coords  = geocode(violation_locs$LOCATION_ADDRESS,violation_locs$LOCATION_ADDRESS_CITY_STATE_ZIP)
+```
+for i in range 1... # rows:
+  print(i)
+   get addresss , get city state zip
+   get the geo code
+   build up list of lat and long
+   sleep(1)
+   
+```{r}
+violation_locs[3,"LOCATION_ADDRESS"]
+```
+
+```{r}
+loc = violation_locs[3,"LOCATION_ADDRESS"]
+print(loc)
+```
+```{r}
+city=violation_locs[3,"LOCATION_ADDRESS_CITY_STATE_ZIP"]
+print(city)
+```
+```{r}
+geocode(loc,city)
+```
+```{r}
+
+geocode <- function(address, citystatezip){
+  # NOMINATIM SEARCH API URL
+  src_url <- "https://nominatim.openstreetmap.org/search?q="
+  
+  # CREATE A FULL ADDRESS
+  # put in + instead of space
+  address = str_replace_all(string = address, pattern = "\\s", 
+                         replacement = "+")
+  citystatezip = gsub(" ","%2C",citystatezip)
+  addr <- paste(address, citystatezip, sep = "%2C")
+  
+  # CREATE A SEARCH URL BASED ON NOMINATIM API TO RETURN GEOJSON
+  requests <- paste0(src_url, addr, "&format=geojson")
+  print(requests)
+  
+    
+    # QUERY THE API TRANSFORM RESPONSE FROM JSON TO R LIST
+    response <- read_html(requests) %>%
+      html_node("p") %>%
+      html_text() %>%
+      fromJSON()
+    
+    res=c("","")
+    if (length(response$features) > 0) {
+      # FROM THE RESPONSE EXTRACT LATITUDE AND LONGITUDE COORDINATES
+      lon <- response$features[[1]]$geometry$coordinates[1]
+      lat <- response$feature[[1]]$geometry$coordinates[2]
+      res = paste(lon,",",lat)
+    }
+    return(res)
+}
+```
+work this out by hand
+```{r}
+src_url <- "https://nominatim.openstreetmap.org/search?q="
+loc = str_replace_all(string = loc, pattern = "\\s", 
+                         replacement = "+")
+city= gsub(" ","%2C",city)
+addr <- paste(loc, city, sep = "%2C")
+requests <- paste0(src_url, addr, "&format=geojson")
+```
+ok. make the request
+```{r}
+response <- read_html(requests) %>%
+      html_node("p") %>%
+      html_text() %>%
+      fromJSON()
+```
+look at responses
+```{r}
+response
+```
+```{r}
+length(response$features)==0
+```
+```{r}
+lats<-vector()
+longs<-vector()
+for (i in 1:nrow(violation_locs)) {
+  print(i)
+  loc_address = violation_locs[i,"LOCATION_ADDRESS"]
+  city_state = violation_locs[i,"LOCATION_ADDRESS_CITY_STATE_ZIP"]
+  clint=violation_locs[i,"CLNT_ID"]
+  latlong = geocode(loc_address,city_state)
+  print(latlong)
+  lon=latlong[1]
+  lat=latlong[2]
+  append(longs,lon)
+  append(lats,lat)
+  Sys.sleep(2)
+}
+violation_locs$lats=lats
+violation_locs$longs=longs
 ```
 
 
